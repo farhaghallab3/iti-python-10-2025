@@ -22,11 +22,14 @@ pipeline {
         }
 
         stage('Build') {
-            steps {
-                echo "Building and running Python app..."
-                sh 'python3 app.py'
-            }
-        }
+    steps {
+        echo "Building and running Python app inside container..."
+        sh '''
+        docker run --rm -v "$PWD":/app -w /app python:3.10-slim python app.py
+        '''
+    }
+}
+
 
         stage('Deploy (Optional)') {
             steps {

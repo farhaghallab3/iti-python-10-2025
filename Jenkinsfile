@@ -1,26 +1,52 @@
-echo "pipeline {
-  agent any
-  stages {
-    stage('Clone') {
-      steps {
-        echo 'Cloning from GitHub...'
-      }
+pipeline {
+    agent any
+
+    triggers {
+        // Schedule: run every 2 minutes (CRON syntax)
+        cron('H/2 * * * *')
+        // Optional: webhook trigger from GitHub
     }
-    stage('Build') {
-      steps {
-        echo 'Building the app...'
-        sh 'python app.py'
-      }
+
+    environment {
+        GIT_URL = 'https://github.com/farhaghallab3/iti-python-10-2025.git'
+        GIT_BRANCH = 'main'
+        GIT_CREDENTIALS = 'github-path'  // اسم الـ credential اللي أضفناه في Jenkins
     }
-    stage('Deploy') {
-      steps {
-        echo 'Deploy stage...'
-      }
+
+    stages {
+
+        stage('Clone from GitHub') {
+            steps {
+                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDENTIALS}", url: "${env.GIT_URL}"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building and running Python app..."
+                sh 'python3 app.py'
+            }
+        }
+
+        stage('Deploy (Optional)') {
+            steps {
+                echo "Deploying with Docker (if Dockerfile exists)..."
+                sh '''
+                if [ -f Dockerfile ]; then
+                    docker build -t iti-python-app .
+                    docker run --rm iti-python-app
+                else
+                    echo "No Dockerfile found, skipping container build."
+                fi
+                '''
+            }
+        }
     }
-  }
-  post {
-    always {
-      cleanWs()
+
+    post {
+        always {
+            echo "Cleaning workspace..."
+            cleanWs()
+        }
     }
-  }
-}" > Jenkinsfile
+}
